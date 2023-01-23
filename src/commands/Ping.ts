@@ -1,8 +1,10 @@
-import { command, Command, CommandContext, Utils } from "@lib";
+import { CommandData, Utils } from "@lib";
 
-@command({ name: "ping", description: "Shows the latency of the bot." })
-export default class Ping extends Command {
-    exec(ctx: CommandContext) {
-        ctx.reply(Utils.embed(`Pong! **Heartbeat:** *${Math.round(ctx.client.ws.ping)}ms*`), { ephemeral: true });
-    }
-}
+export default {
+	cmd: "ping",
+	exec: async (message) => {
+		message.reply(
+			`pong! **heartbeat:** *${Math.round(message.client.ws.ping)}ms*`
+		);
+	},
+} satisfies CommandData;

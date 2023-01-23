@@ -1,101 +1,160 @@
-import { command, Command, CommandContext, MessageChannel, Utils } from "@lib";
+import { CommandData, MessageChannel, Utils } from "@lib";
 import { SpotifyItemType } from "@lavaclient/spotify";
 
 import type { Addable } from "@lavaclient/queue";
 
-@command({
-    name: "play",
-    description: "Plays a song in the current vc.",
-    options: [
-        {
-            name: "query",
-            description: "The search query.",
-            type: "STRING",
-            required: true
-        },
-        {
-            name: "next",
-            description: "Whether to add the results to the top of the queue.",
-            type: "BOOLEAN",
-            required: false
-        }
-    ]
-})
-export default class Play extends Command {
-    async exec(ctx: CommandContext, { query, next }: { query: string, next: boolean }) {
-        /* check if the invoker is in a vc. */
-        const vc = ctx.guild?.voiceStates?.cache?.get(ctx.user.id)?.channel
-        if (!vc) {
-            return ctx.reply(Utils.embed("Join a voice channel bozo"), { ephemeral: true });
-        }
+export default {
+	cmd: "play",
+	alias: ["p"],
+	exec: async (message) => {
+		const query = message.content.substring(
+			message.content.indexOf(" ") + 1
+		);
+		if (query.length === 0)
+			return message.reply("specify something to play :)");
 
-        /* check if a player already exists, if so check if the invoker is in our vc. */
-        let player = ctx.client.music.players.get(ctx.guild!.id);
-        if (player && player.channelId !== vc.id) {
-            return ctx.reply(Utils.embed(`Join <#${player.channelId}> bozo`), { ephemeral: true });
-        }
+		/* check if the invoker is in a vc. */
+		const vc = message.guild?.voiceStates?.cache?.get(
+			message.author.id
+		)?.channel;
+		if (!vc) {
+			return message.reply("join a voice channel first.");
+		}
 
-        let tracks: Addable[] = [], msg: string = "";
-        if (ctx.client.music.spotify.isSpotifyUrl(query)) {
-            const item = await ctx.client.music.spotify.load(query);
-            switch (item?.type) {
-                case SpotifyItemType.Track:
-                    const track = await item.resolveYoutubeTrack();
-                    tracks = [ track ];
-                    msg = `Queued track [**${item.name}**](${query}).`;
-                    break;
-                case SpotifyItemType.Artist:
-                    tracks = await item.resolveYoutubeTracks();
-                    msg = `Queued the **Top ${tracks.length} tracks** for [**${item.name}**](${query}).`;
-                    break;
-                case SpotifyItemType.Album:
-                case SpotifyItemType.Playlist:
-                    tracks = await item.resolveYoutubeTracks();
-                    msg = `Queued **${tracks.length} tracks** from ${SpotifyItemType[item.type].toLowerCase()} [**${item.name}**](${query}).`;
-                    break;
-                default:
-                    return ctx.reply({ content: "Sorry, couldn't find anything :/", ephemeral: true });
-            }
-        } else {
-            const results = await ctx.client.music.rest.loadTracks(/^https?:\/\//.test(query)
-                ? query
-                : `ytsearch:${query}`);
+		/* check if a player already exists, if so check if the invoker is in our vc. */
+		let player = message.client.music.players.get(message.guild!.id);
+		if (player && player.channelId !== vc.id) {
+			return message.reply(
+				`player already exists in <#${player.channelId}> :(`
+			);
+		}
 
-            switch (results.loadType) {
-                case "LOAD_FAILED":
-                case "NO_MATCHES":
-                    return ctx.reply({ content: "uh oh something went wrong", ephemeral: true });
-                case "PLAYLIST_LOADED":
-                    tracks = results.tracks;
-                    msg = `Queued playlist [**${results.playlistInfo.name}**](${query}), it has a total of **${tracks.length}** tracks.`;
-                    break
-                case "TRACK_LOADED":
-                case "SEARCH_RESULT":
-                    const [track] = results.tracks;
-                    tracks = [track];
-                    msg = `Queued [**${track.info.title}**](${track.info.uri})`;
-                    break;
-            }
-        }
+		let tracks: Addable[] = [],
+			msg: string = "";
+		if (message.client.music.spotify.isSpotifyUrl(query)) {
+			const item = await message.client.music.spotify.load(query);
+			switch (item?.type) {
+				case SpotifyItemType.Track:
+					const track = await item.resolveYoutubeTrack();
+					tracks = [track];
+					msg = `queued track [**${item.name}**](${query}).`;
+					break;
+				case SpotifyItemType.Artist:
+					tracks = await item.resolveYoutubeTracks();
+					msg = `queued the **Top ${tracks.length} tracks** for [**${item.name}**](${query}).`;
+					break;
+				case SpotifyItemType.Album:
+				case SpotifyItemType.Playlist:
+					tracks = await item.resolveYoutubeTracks();
+					msg = `queued **${
+						tracks.length
+					} tracks** from ${SpotifyItemType[
+						item.type
+					].toLowerCase()} [**${item.name}**](${query}).`;
+					break;
+				default:
+					return message.reply("sorry, couldn't find anything :/");
+			}
+		} else {
+			const results = await message.client.music.rest.loadTracks(
+				/^https?:\/\//.test(query) ? query : `ytsearch:${query}`
+			);
 
-        /* create a player and/or join the member's vc. */
-        if (!player?.connected) {
-            player ??= ctx.client.music.createPlayer(ctx.guild!.id);
-            player.queue.channel = ctx.channel as MessageChannel;
-            await player.connect(vc.id, { deafened: true });
-        }
+			switch (results.loadType) {
+				case "LOAD_FAILED":
+				case "NO_MATCHES":
+					return message.reply("no matches found...?");
+				case "PLAYLIST_LOADED":
+					tracks = results.tracks;
+					msg = `queued playlist [**${results.playlistInfo.name}**](${query}), it has a total of **${tracks.length}** tracks.`;
+					break;
+				case "TRACK_LOADED":
+				case "SEARCH_RESULT":
+					if (results.tracks.length > 1) {
+						const maxSearchResults =
+							results.tracks.length < 5
+								? results.tracks.length
+								: 5;
+						const trackSelection = results.tracks
+							.slice(0, maxSearchResults)
+							.map(
+								(track, index) =>
+									`${++index} - \`${track.info.title}\``
+							)
+							.join("\n");
 
-        /* reply with the queued message. */
-        const started = player.playing || player.paused;
-        await ctx.reply(Utils.embed({
-            description: msg,
-            footer: next ? { text: "Added to the top of the queue." } : undefined
-        }), { ephemeral: !started });
+						message.reply(
+							`Choose from the search below (reply with number):\n${trackSelection}`
+						);
 
-        /* do queue tings. */
-        player.queue.add(tracks, { requester: ctx.user.id, next });
-        if (!started) {
-            await player.queue.start()
-        }
-    }
-}
+						const collector =
+							message.channel.createMessageCollector({
+								filter: (m) =>
+									m.author.id === message.author.id &&
+									/^(\d+|!play .+)$/i.test(m.content),
+								max: 1,
+								time: 30e3,
+							});
+
+						const collectorResult = await new Promise((resolve) => {
+							collector.on("collect", (m) => {
+								const first = m.content;
+								if (first.toLowerCase().startsWith("!play")) {
+									message.channel.send(
+										"cancelled selection."
+									);
+									resolve(false);
+								}
+
+								const index = Number(first) - 1;
+								if (index < 0 || index > maxSearchResults - 1) {
+									message.reply(
+										`the number you provided too small or too big (1-${maxSearchResults}).`
+									);
+									resolve(false);
+								}
+
+								const track = results.tracks[index];
+								tracks = [track];
+
+								msg = `enqueuing [${track.info.title}]`;
+								resolve(true);
+							});
+
+							collector.on("end", async (collected) => {
+								if (collected.size !== 0) return;
+								await message.reply(
+									"you didn't provide a selection."
+								);
+								resolve(false);
+							});
+						});
+						if (collectorResult === false) return;
+					} else {
+						const [track] = results.tracks;
+						tracks = [track];
+						msg = `enqueuing [${track.info.title}]`;
+					}
+
+					break;
+			}
+		}
+
+		/* create a player and/or join the member's vc. */
+		if (!player?.connected) {
+			player ??= message.client.music.createPlayer(message.guild!.id);
+			player.queue.channel = message.channel as MessageChannel;
+			await player.connect(vc.id, { deafened: true });
+		}
+
+		/* reply with the queued message. */
+		const started = player.playing || player.paused;
+		await message.reply(msg);
+
+		/* do queue tings. */
+		player.queue.add(tracks, { requester: message.author.id });
+		if (!started) {
+			await player.queue.start();
+		}
+	},
+} satisfies CommandData;

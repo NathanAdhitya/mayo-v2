@@ -1,21 +1,24 @@
-import { MessageEmbed, MessageEmbedOptions } from "discord.js";
+import { EmbedBuilder, EmbedData, Message, MessagePayload, MessageReplyOptions } from "discord.js";
 import { lstatSync, readdirSync } from "fs";
 import { join } from "path";
 
-import type { Command } from "@lib";
-import type { Bot } from "./Bot";
 import type { NewsChannel, TextChannel, ThreadChannel } from "discord.js";
 
 export type MessageChannel = TextChannel | ThreadChannel | NewsChannel;
+export interface CommandData {
+    cmd: string;
+    alias?: string[];
+    exec: (mesage: Message) => any;
+}
 
 export abstract class Utils {
     static PRIMARY_COLOR = 0xfff269;
 
-    static embed(embed: MessageEmbedOptions | string): MessageEmbed {
-        const options: MessageEmbedOptions = typeof embed === "string" ? { description: embed } : embed;
+    static embed(embed: EmbedData | string): MessageReplyOptions {
+        const options: EmbedData = typeof embed === "string" ? { description: embed } : embed;
         options.color ??= Utils.PRIMARY_COLOR;
 
-        return new MessageEmbed(options);
+        return {embeds: [new EmbedBuilder(options)]};
     }
 
     static walk(directory: string): string[] {
@@ -35,50 +38,22 @@ export abstract class Utils {
         return read(directory);
     }
 
-    static async syncCommands(client: Bot, dir: string, soft: boolean = false) {
-        const commands: Command[] = [];
+    static async prepareCommands(dir: string) {
+        const commands: Map<string, CommandData["exec"]> = new Map();
         for (const path of Utils.walk(dir)) {
-            const { default: Command } = await import(path);
-            if (!Command) {
+            const { default: command }: {default: CommandData} = await import(path);
+            if (!command) {
                 continue;
             }
 
-            commands.push(new Command());
-        }
-
-        const commandManager = client.application!.commands,
-            existing = await commandManager.fetch();
-
-        /* do soft sync */
-        if (soft) {
-            for (const command of commands) {
-                const ref = existing.find(c => c.name === command.data.name)
-                if (!ref) {
-                    continue
-                }
-
-                command.ref = ref;
-                client.commands.set(ref.id, command);
+            commands.set(command.cmd.toLowerCase(), command.exec);
+            if(Array.isArray(command.alias)){
+                command.alias.forEach((alias) => {
+                    commands.set(alias.toLowerCase(), command.exec);
+                })
             }
-
-            console.log(`[discord] slash commands: registered ${client.commands.size}/${commands.length} commands.`);
-            return;
         }
 
-        /* get the slash commands to add, update, or remove. */
-        const adding = commands.filter(c => existing.every(e => e.name !== c.data.name))
-            , updating = commands.filter(c => existing.some(e => e.name === c.data.name))
-            , removing = [ ...existing.filter(e => commands.every(c => c.data.name !== e.name)).values() ];
-
-        console.log(`[discord] slash commands: removing ${removing.length}, adding ${adding.length}, updating ${updating.length}`)
-
-        /* update/create slash commands. */
-        const creating = [...adding, ...updating],
-            created = await commandManager.set(creating.map(c => c.data));
-
-        for (const command of creating) {
-            command.ref = created.find(c => c.name === command.data.name)!;
-            client.commands.set(command.ref.id, command);
-        }
+        return commands;
     }
 }

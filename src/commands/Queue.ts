@@ -1,30 +1,50 @@
-import { command, Command, CommandContext, Utils } from "@lib";
+import { CommandData, Utils } from "@lib";
 
-const formatIndex = (index: number, size: number) => (index + 1).toString().padStart(size.toString().length, "0")
+const formatIndex = (index: number, size: number) =>
+	(index + 1).toString().padStart(size.toString().length, "0");
 
-@command({ name: "queue", description: "Shows the tracks that are in the queue." })
-export default class Queue extends Command {
-    async exec(ctx: CommandContext) {
-        /* check if a player exists for this guild. */
-        const player = ctx.client.music.players.get(ctx.guild!.id);
-        if (!player?.connected) {
-            return ctx.reply(Utils.embed("I couldn't find a player for this guild."), { ephemeral: true });
-        }
+export default {
+	cmd: "queue",
+	exec: async (message) => {
+		/* check if a player exists for this guild. */
+		const player = message.client.music.players.get(message.guild!.id);
+		if (!player?.connected) {
+			return message.reply("couldn't find a player for this guild.");
+		}
 
-        /* check if the queue is empty. */
-        if (!player.queue.tracks.length) {
-            return ctx.reply(Utils.embed("There are no tracks in the queue."));
-        }
+		const currentPlaying = player.trackData?.title;
 
-        /* respond with an embed of the queue. */
-        const size = player.queue.tracks.length;
-        const str = player.queue.tracks
-            .map((t, idx) => `\`#${formatIndex(idx, size)}\` [**${t.title}**](${t.uri}) ${t.requester ? `<@${t.requester}>` : ""}`)
-            .join("\n");
+		/* check if the queue is empty. */
+		if (!player.queue.tracks.length) {
+			return message.reply(
+				`${
+					currentPlaying
+						? `currently playing: ${currentPlaying}\n`
+						: ""
+				}there are no tracks in the queue.`
+			);
+		}
 
-        return ctx.reply(Utils.embed({
-            description: str,
-            title: `Queue for **${ctx.guild?.name}**`
-        }));
-    }
-}
+		/* respond with an embed of the queue. */
+		const size = player.queue.tracks.length;
+		const str = player.queue.tracks
+			.map(
+				(t, idx) =>
+					`\`#${formatIndex(idx, size)}\` [**${t.title}**](${
+						t.uri
+					}) ${t.requester ? `<@${t.requester}>` : ""}`
+			)
+			.join("\n");
+
+		return message.reply(
+			Utils.embed({
+				description: `${
+					currentPlaying
+						? `currently playing: ${currentPlaying}\n`
+						: ""
+				}${str}`,
+				title: `queue for **${message.guild?.name}**`,
+			})
+		);
+	},
+} satisfies CommandData;
