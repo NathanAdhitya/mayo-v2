@@ -1,12 +1,9 @@
 {
-    "name": "@lavaclient/discord.js",
-    "version": "0.0.0",
-    "description": "Discord.js example bot",
+    "name": "mayo-v2",
+    "version": "0.0.1",
+    "description": "mayonez v2",
     "main": "dist/index.js",
-    "repository": "https://github.com/lavaclient/discord-v13-example",
-    "author": "melike2d",
-    "license": "GPL-3.0-only",
-    "private": false,
+    "private": true,
     "_moduleAliases": {
         "@lib": "dist/lib"
     },
@@ -19,10 +16,11 @@
     "dependencies": {
         "@lavaclient/queue": "^2.0.4",
         "@lavaclient/spotify": "^3.0.0",
-        "discord.js": "discordjs/discord.js",
+        "discord.js": "^14.7.1",
         "dotenv": "^10.0.0",
         "lavaclient": "^4.0.4",
-        "module-alias": "^2.2.2"
+        "module-alias": "^2.2.2",
+        "tslib": "^2.4.1"
     },
     "devDependencies": {
         "@types/node": "^16.10.2",

@@ -1,51 +1,56 @@
 import "dotenv/config";
 import "module-alias/register";
 import { load } from "@lavaclient/spotify";
-import { Utils, Bot, CommandContext } from "@lib";
+import { Bot, CommandData, Utils } from "@lib";
 import { join } from "path";
+import { ActivityType } from "discord.js";
 
 load({
-    client: {
-        id: process.env.SPOTIFY_CLIENT_ID!,
-        secret: process.env.SPOTIFY_CLIENT_SECRET!,
-    },
-    autoResolveYoutubeTracks: true
+	client: {
+		id: process.env.SPOTIFY_CLIENT_ID!,
+		secret: process.env.SPOTIFY_CLIENT_SECRET!,
+	},
+	autoResolveYoutubeTracks: true,
 });
 
-const client = new Bot()
+const client = new Bot();
+let commandMap: Map<string, CommandData["exec"]> = new Map();
 
 client.music.on("connect", () => {
-    console.log(`[music] now connected to lavalink`)
+	console.log(`[music] now connected to lavalink`);
 });
 
-client.music.on("queueFinish", queue => {
-    const embed = Utils.embed("Uh oh, the queue has ended :/");
-
-    queue.channel.send({ embeds: [ embed ] });
-    queue.player.disconnect()
-    queue.player.node.destroyPlayer(queue.player.guildId);
-})
+client.music.on("queueFinish", (queue) => {
+	queue.channel.send("uh oh, the queue has ended :/");
+	queue.player.disconnect();
+	queue.player.node.destroyPlayer(queue.player.guildId);
+});
 
 client.music.on("trackStart", (queue, song) => {
-    const embed = Utils.embed(`Now playing [**${song.title}**](${song.uri}) ${song.requester ? `<@${song.requester}>` : ""}`)
-    queue.channel.send({ embeds: [embed] });
+	queue.channel.send({
+		content: `now playing [**${song.title}**](${song.uri}) ${
+			song.requester ? `requested by <@${song.requester}>` : ""
+		}`,
+		allowedMentions: { parse: [] },
+	});
 });
 
 client.on("ready", async () => {
-    await Utils.syncCommands(client, join(__dirname, "commands"), !process.argv.includes("--force-sync"));
-    client.music.connect(client.user!.id); // Client#user shouldn't be null on ready
-    console.log("[discord] ready!");
+	commandMap = await Utils.prepareCommands(join(__dirname, "commands"));
+	client.music.connect(client.user!.id); // Client#user shouldn't be null on ready
+	client.user!.setActivity(`music. ${process.env.BOT_PREFIX}mayohelp`);
+	console.log("[discord] ready!");
 });
 
-client.on("interactionCreate", interaction => {
-    if (interaction.isCommand()) {
-        const options = Object.assign({}, ...interaction.options.data.map(i => {
-            const value = i.role ?? i.channel ?? i.member ?? i.user ?? i.value;
-            return { [i.name]: value }
-        }))
+client.on("messageCreate", (message) => {
+	if (!message.content.startsWith(process.env.BOT_PREFIX!)) return;
+	if (message.author.bot) return;
 
-        client.commands.get(interaction.commandId)?.exec(new CommandContext(interaction), options);
-    }
+	const cmdName = message.content.split(" ")[0].substring(1).toLowerCase();
+	const cmdData = commandMap.get(cmdName);
+	if (cmdData !== undefined) {
+		cmdData(message);
+	}
 });
 
-client.login(process.env.BOT_TOKEN)
+client.login(process.env.BOT_TOKEN);

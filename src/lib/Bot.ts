@@ -1,15 +1,12 @@
-import { Client, Collection, Snowflake } from "discord.js";
+import { Client, Collection, GatewayDispatchEvents, GatewayIntentBits, Snowflake } from "discord.js";
 import { Node } from "lavaclient";
-
-import { Command } from "./command/Command";
 
 export class Bot extends Client {
     readonly music: Node;
-    readonly commands: Collection<Snowflake, Command> = new Collection();
 
     constructor() {
         super({
-            intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_VOICE_STATES"]
+            intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates]
         });
 
         this.music = new Node({
@@ -21,8 +18,8 @@ export class Bot extends Client {
             }
         });
 
-        this.ws.on("VOICE_SERVER_UPDATE", data => this.music.handleVoiceUpdate(data));
-        this.ws.on("VOICE_STATE_UPDATE", data => this.music.handleVoiceUpdate(data));
+        this.ws.on(GatewayDispatchEvents.VoiceServerUpdate, data => this.music.handleVoiceUpdate(data))
+        this.ws.on(GatewayDispatchEvents.VoiceStateUpdate, data => this.music.handleVoiceUpdate(data));
     }
 }
 
