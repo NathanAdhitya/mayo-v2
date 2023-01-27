@@ -11,6 +11,7 @@ export default {
 			["play <search or url>", "play music"],
 			["queue", "ooh what's playing?"],
 			["remove <index>", "remove something in the queue"],
+			["skip", "skip the currently playing thing"],
 			["stop", "destroy the player for the guild"],
 		];
 		const msg =
