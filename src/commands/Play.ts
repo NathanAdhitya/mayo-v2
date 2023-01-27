@@ -84,7 +84,7 @@ export default {
 							.join("\n");
 
 						message.reply(
-							`Choose from the search below (reply with number):\n${trackSelection}`
+							`choose from the search below (reply with number):\n${trackSelection}`
 						);
 
 						const collector =
