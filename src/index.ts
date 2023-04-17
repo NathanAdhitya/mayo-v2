@@ -4,6 +4,7 @@ import { load } from "@lavaclient/spotify";
 import { Bot, CommandData, Utils } from "@lib";
 import { join } from "path";
 import { ActivityType } from "discord.js";
+import { Player } from "lavaclient";
 
 load({
 	client: {
@@ -15,6 +16,8 @@ load({
 
 const client = new Bot();
 let commandMap: Map<string, CommandData["exec"]> = new Map();
+const guildPlayerTimeouts = new Map<string, NodeJS.Timeout>();
+const playerIdleTimeoutMs = 5 * 60 * 1000;
 
 client.music.on("connect", () => {
 	console.log(`[music] now connected to lavalink`);
@@ -22,11 +25,22 @@ client.music.on("connect", () => {
 
 client.music.on("queueFinish", (queue) => {
 	queue.channel.send("uh oh, the queue has ended :/");
-	queue.player.disconnect();
-	queue.player.node.destroyPlayer(queue.player.guildId);
+
+	// Set a timeout of 5 minutes before disconnecting
+	guildPlayerTimeouts.set(queue.player.guildId, setTimeout(() => {
+		queue.player.disconnect();
+		queue.player.node.destroyPlayer(queue.player.guildId);
+	}, playerIdleTimeoutMs));
 });
 
 client.music.on("trackStart", (queue, song) => {
+	// Cancel timeout if it exists
+	const timeout = guildPlayerTimeouts.get(queue.player.guildId);
+	if (timeout !== undefined) {
+		clearTimeout(timeout);
+		guildPlayerTimeouts.delete(queue.player.guildId);
+	}
+	
 	queue.channel.send({
 		content: `now playing [**${song.title}**](${song.uri}) ${
 			song.requester ? `requested by <@${song.requester}>` : ""
