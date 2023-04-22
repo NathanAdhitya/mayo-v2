@@ -84,14 +84,14 @@ export default {
 							.join("\n");
 
 						message.reply(
-							`choose from the search below (reply with number):\n${trackSelection}`
+							`choose from the search below (reply with number or cancel):\n${trackSelection}`
 						);
 
 						const collector =
 							message.channel.createMessageCollector({
 								filter: (m) =>
 									m.author.id === message.author.id &&
-									/^(\d+|!play .+)$/i.test(m.content),
+									/^(\d+|!play.*|cancel)$/i.test(m.content),
 								max: 1,
 								time: 30e3,
 							});
@@ -99,22 +99,31 @@ export default {
 						const collectorResult = await new Promise((resolve) => {
 							collector.on("collect", (m) => {
 								const first = m.content;
-								if (first.toLowerCase().startsWith("!play")) {
-									message.channel.send(
-										"cancelled selection."
-									);
-									resolve(false);
+								if (
+									first.toLowerCase().startsWith("!play") ||
+									first.toLowerCase().startsWith("cancel")
+								) {
+									message.reply("cancelled selection.");
+									return resolve(false);
 								}
 
-								const index = Number(first) - 1;
-								if (index < 0 || index > maxSearchResults - 1) {
+								const index = Number.parseInt(first, 10) - 1;
+								if (
+									!Number.isInteger(index) ||
+									index < 0 ||
+									index > maxSearchResults - 1
+								) {
 									message.reply(
 										`the number you provided too small or too big (1-${maxSearchResults}).`
 									);
-									resolve(false);
+									return resolve(false);
 								}
 
 								const track = results.tracks[index];
+								if (!track) {
+									message.reply("error: cannot find track.");
+									return resolve(false);
+								}
 								tracks = [track];
 
 								msg = `enqueuing [${track.info.title}]`;
