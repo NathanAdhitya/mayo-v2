@@ -23,7 +23,7 @@ export default {
 
 		/* check if a player already exists, if so check if the invoker is in our vc. */
 		let player = message.client.music.players.get(message.guild!.id);
-		if (player && player.channelId !== vc.id) {
+		if (player && player.channelId !== vc.id && player.channelId !== null) {
 			return message.reply(
 				`player already exists in <#${player.channelId}> :(`
 			);
