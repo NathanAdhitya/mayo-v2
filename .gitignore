@@ -17,3 +17,5 @@ node_modules/
 # yarn lock files
 *.lock
 pnpm-lock.yaml
+
+config/application.yml

@@ -27,26 +27,35 @@ client.music.on("queueFinish", (queue) => {
 	queue.channel.send("uh oh, the queue has ended :/");
 
 	// Set a timeout of 5 minutes before disconnecting
-	guildPlayerTimeouts.set(queue.player.guildId, setTimeout(() => {
-		queue.player.disconnect();
-		queue.player.node.destroyPlayer(queue.player.guildId);
-	}, playerIdleTimeoutMs));
+	guildPlayerTimeouts.set(
+		queue.player.guildId,
+		setTimeout(() => {
+			try {
+				queue.player.disconnect();
+				queue.player.node.destroyPlayer(queue.player.guildId);
+			} catch (e) {}
+		}, playerIdleTimeoutMs)
+	);
 });
 
 client.music.on("trackStart", (queue, song) => {
-	// Cancel timeout if it exists
-	const timeout = guildPlayerTimeouts.get(queue.player.guildId);
-	if (timeout !== undefined) {
-		clearTimeout(timeout);
-		guildPlayerTimeouts.delete(queue.player.guildId);
+	try {
+		// Cancel timeout if it exists
+		const timeout = guildPlayerTimeouts.get(queue.player.guildId);
+		if (timeout !== undefined) {
+			clearTimeout(timeout);
+			guildPlayerTimeouts.delete(queue.player.guildId);
+		}
+
+		queue.channel.send({
+			content: `now playing [**${song.title}**](${song.uri}) ${
+				song.requester ? `requested by <@${song.requester}>` : ""
+			}`,
+			allowedMentions: { parse: [] },
+		});
+	} catch (e) {
+		console.error(e);
 	}
-	
-	queue.channel.send({
-		content: `now playing [**${song.title}**](${song.uri}) ${
-			song.requester ? `requested by <@${song.requester}>` : ""
-		}`,
-		allowedMentions: { parse: [] },
-	});
 });
 
 client.on("ready", async () => {
@@ -63,7 +72,15 @@ client.on("messageCreate", (message) => {
 	const cmdName = message.content.split(" ")[0].substring(1).toLowerCase();
 	const cmdData = commandMap.get(cmdName);
 	if (cmdData !== undefined) {
-		cmdData(message);
+		try {
+			cmdData(message);
+		} catch (e) {
+			message.channel.send(
+				Utils.embed(
+					`an error occurred while executing the command: \`${e}\``
+				)
+			);
+		}
 	}
 });
 
