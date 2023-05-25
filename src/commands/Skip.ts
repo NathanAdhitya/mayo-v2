@@ -1,36 +1,36 @@
 import { CommandData, Utils } from "@lib";
+import { PlayerState } from "kazagumo";
+import { GuildPlayer } from "../lib/GuildPlayer";
 
 export default {
 	cmd: "skip",
 	exec: async (message) => {
+		const gp = await GuildPlayer.create(message);
+
 		/* check if a player exists for this guild. */
-		const player = message.client.music.players.get(message.guild!.id);
-		if (!player?.connected) {
+		if (!gp.isPlayerConnected()) {
 			return message.reply("couldn't find a player for this guild.");
 		}
 
-		/* check if the invoker is in a vc. */
-		const vc = message.guild?.voiceStates?.cache?.get(
-			message.author.id
-		)?.channel;
-		if (!vc) {
-			return message.reply("join a voice channel first.");
+		/* check if the invoker is in a voice channel. */
+		if (!gp.isInvokerInVoiceChannel()) {
+			return message.reply("you must be in a vc");
 		}
 
-		/* check if a player already exists, if so check if the invoker is in our vc. */
-		if (player && player.channelId !== vc.id) {
+		/* check if the invoker is in the player's voice channel. */
+		if (!gp.isInvokerInCorrectVoiceChannel()) {
 			return message.reply(
-				`player already exists in <#${player.channelId}> :(`
+				`you're not in the correct voice channel. player already exists in <#${gp.player.voiceId}>`
 			);
 		}
 
-		if (!player.trackData) return message.reply("not playing any music?");
+		if (gp.player.queue.totalSize === 0)
+			return message.reply("queue is empty?");
 
-		const currentPlaying = player.trackData?.title;
+		const currentPlaying = gp.player.queue.current?.title;
 
 		/* skip and go to next. */
-		await player.stop();
-		await player.queue.start();
+		await gp.player.skip();
 
 		await message.reply(`skipping ${currentPlaying}`);
 	},

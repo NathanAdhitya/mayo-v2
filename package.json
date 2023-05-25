@@ -14,12 +14,13 @@
 		"start": "yarn dev --force-sync"
 	},
 	"dependencies": {
-		"@lavaclient/queue": "^2.0.4",
-		"@lavaclient/spotify": "^3.0.0",
-		"discord.js": "14.9.0",
+		"discord.js": "^14.11.0",
 		"dotenv": "^10.0.0",
-		"lavaclient": "^4.0.4",
+		"kazagumo": "^2.3.2",
+		"kazagumo-spotify": "^1.2.0",
 		"module-alias": "^2.2.2",
+		"shoukaku": "^3.4.0",
+		"stone-deezer": "^1.2.3",
 		"tslib": "^2.4.1"
 	},
 	"devDependencies": {

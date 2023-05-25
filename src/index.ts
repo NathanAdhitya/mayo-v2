@@ -1,66 +1,79 @@
 import "dotenv/config";
 import "module-alias/register";
-import { load } from "@lavaclient/spotify";
 import { Bot, CommandData, Utils } from "@lib";
 import { join } from "path";
-import { ActivityType } from "discord.js";
-import { Player } from "lavaclient";
-
-load({
-	client: {
-		id: process.env.SPOTIFY_CLIENT_ID!,
-		secret: process.env.SPOTIFY_CLIENT_SECRET!,
-	},
-	autoResolveYoutubeTracks: true,
-});
+import { ChannelType, Message } from "discord.js";
 
 const client = new Bot();
 let commandMap: Map<string, CommandData["exec"]> = new Map();
 const guildPlayerTimeouts = new Map<string, NodeJS.Timeout>();
 const playerIdleTimeoutMs = 5 * 60 * 1000;
 
-client.music.on("connect", () => {
-	console.log(`[music] now connected to lavalink`);
-});
+client.kazagumo.shoukaku.on("ready", (name) =>
+	console.log(`[music] Lavalink ${name}: Ready!`)
+);
+client.kazagumo.shoukaku.on("error", (name, error) =>
+	console.error(`[music] Lavalink ${name}: Error Caught,`, error)
+);
+client.kazagumo.shoukaku.on("close", (name, code, reason) =>
+	console.warn(
+		`[music] Lavalink ${name}: Closed, Code ${code}, Reason ${
+			reason || "No reason"
+		}`
+	)
+);
+client.kazagumo.shoukaku.on("disconnect", (name, reason) =>
+	console.warn(
+		`[music] Lavalink ${name}: Disconnected, Reason ${
+			reason || "No reason"
+		}`
+	)
+);
 
-client.music.on("queueFinish", (queue) => {
-	queue.channel.send("uh oh, the queue has ended :/");
+client.kazagumo.on("playerEmpty", (player) => {
+	const originalChannel = client.channels.cache.get(player.textId);
+	if (originalChannel && originalChannel.type === ChannelType.GuildText)
+		originalChannel.send("uh oh, the queue has ended :/");
 
 	// Set a timeout of 5 minutes before disconnecting
 	guildPlayerTimeouts.set(
-		queue.player.guildId,
+		player.guildId,
 		setTimeout(() => {
 			try {
-				queue.player.disconnect();
-				queue.player.node.destroyPlayer(queue.player.guildId);
+				player.disconnect();
+				player.destroy();
 			} catch (e) {}
 		}, playerIdleTimeoutMs)
 	);
 });
 
-client.music.on("trackStart", (queue, song) => {
+client.kazagumo.on("playerStart", (player, track) => {
+	const originalChannel = client.channels.cache.get(player.textId);
+
 	try {
 		// Cancel timeout if it exists
-		const timeout = guildPlayerTimeouts.get(queue.player.guildId);
+		const timeout = guildPlayerTimeouts.get(player.guildId);
 		if (timeout !== undefined) {
 			clearTimeout(timeout);
-			guildPlayerTimeouts.delete(queue.player.guildId);
+			guildPlayerTimeouts.delete(player.guildId);
 		}
 
-		queue.channel.send({
-			content: `now playing [**${song.title}**](${song.uri}) ${
-				song.requester ? `requested by <@${song.requester}>` : ""
-			}`,
-			allowedMentions: { parse: [] },
-		});
+		if (originalChannel && originalChannel.type === ChannelType.GuildText)
+			originalChannel.send({
+				content: `now playing [**${track.title}**](${track.uri}) ${
+					track.requester ? `requested by <@${track.requester}>` : ""
+				}`,
+				allowedMentions: { parse: [] },
+			});
 	} catch (e) {
 		console.error(e);
 	}
 });
 
+client.kazagumo.shoukaku.on("error", (_, error) => console.error(error));
+
 client.on("ready", async () => {
 	commandMap = await Utils.prepareCommands(join(__dirname, "commands"));
-	client.music.connect(client.user!.id); // Client#user shouldn't be null on ready
 	client.user!.setActivity(`music. ${process.env.BOT_PREFIX}mayohelp`);
 	console.log("[discord] ready!");
 });

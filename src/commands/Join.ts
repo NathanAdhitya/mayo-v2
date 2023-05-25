@@ -1,28 +1,25 @@
 import { CommandData, MessageChannel, Utils } from "@lib";
+import { PlayerState } from "kazagumo";
+import { GuildPlayer } from "../lib/GuildPlayer";
 
 export default {
 	cmd: "join",
 	exec: async (message) => {
+		const gp = await GuildPlayer.create(message);
+
 		/* check if the invoker is in a voice channel. */
-		const vc = message.guild?.voiceStates?.cache?.get(
-			message.author.id
-		)?.channel;
-		if (!vc) {
+		if (!gp.isInvokerInVoiceChannel()) {
 			return message.reply("you must be in a vc");
 		}
 
 		/* check if a player already exists for this guild. */
-		const player = message.client.music.createPlayer(vc.guild.id);
-		if (player.connected) {
+		if (gp.isPlayerConnected()) {
 			return message.reply("already connected to a vc.");
 		}
 
-		/* set the queue channel so that we can send track start embeds. */
-		player.queue.channel = message.channel as MessageChannel;
+		/* join the invoker's voice channel. */
+		const vc = await gp.ensureJoinedAndPlaying();
 
-		/* connect to the vc. */
-		await player.connect(vc.id);
-
-		return message.reply(`joined ${vc}`);
+		return message.reply(`joined <#${vc}>`);
 	},
 } satisfies CommandData;

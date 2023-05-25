@@ -1,4 +1,6 @@
 import { CommandData, Utils } from "@lib";
+import { PlayerState } from "kazagumo";
+import { GuildPlayer } from "../lib/GuildPlayer";
 
 const formatIndex = (index: number, size: number) =>
 	(index + 1).toString().padStart(size.toString().length, "0");
@@ -6,16 +8,19 @@ const formatIndex = (index: number, size: number) =>
 export default {
 	cmd: "queue",
 	exec: async (message) => {
+		const gp = await GuildPlayer.create(message);
+
 		/* check if a player exists for this guild. */
-		const player = message.client.music.players.get(message.guild!.id);
-		if (!player?.connected) {
+		if (!gp.isPlayerConnected()) {
 			return message.reply("couldn't find a player for this guild.");
 		}
 
-		const currentPlaying = player.trackData?.title;
+		const player = gp.player;
+
+		const currentPlaying = player.queue.current?.title;
 
 		/* check if the queue is empty. */
-		if (!player.queue.tracks.length) {
+		if (player.queue.isEmpty) {
 			return message.reply(
 				`${
 					currentPlaying
@@ -26,8 +31,8 @@ export default {
 		}
 
 		/* respond with an embed of the queue. */
-		const size = player.queue.tracks.length;
-		const str = player.queue.tracks
+		const size = player.queue.size;
+		const str = player.queue
 			.map(
 				(t, idx) =>
 					`\`#${formatIndex(idx, size)}\` [**${t.title}**](${
