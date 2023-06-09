@@ -41,13 +41,18 @@ export default {
 			)
 			.join("\n");
 
+		const fullDescription = `${
+			currentPlaying ? `currently playing: ${currentPlaying}\n` : ""
+		}${str}`;
+
+		const truncatedDescription =
+			fullDescription.length > 2048
+				? fullDescription.substring(0, 2045) + "..."
+				: fullDescription;
+
 		return message.reply(
 			Utils.embed({
-				description: `${
-					currentPlaying
-						? `currently playing: ${currentPlaying}\n`
-						: ""
-				}${str}`,
+				description: truncatedDescription,
 				title: `queue for **${message.guild?.name}**`,
 			})
 		);
