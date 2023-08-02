@@ -1,35 +1,35 @@
 {
-	"name": "mayo-v2",
-	"version": "0.0.1",
-	"description": "mayonez v2",
-	"main": "dist/index.js",
-	"private": true,
-	"_moduleAliases": {
-		"@lib": "dist/lib"
-	},
-	"scripts": {
-		"build": "yarn clean && tsc",
-		"clean": "rimraf dist",
-		"dev": "yarn build && node .",
-		"start": "yarn dev --force-sync"
-	},
-	"dependencies": {
-		"discord.js": "^14.11.0",
-		"dotenv": "^10.0.0",
-		"kazagumo": "^2.3.2",
-		"kazagumo-spotify": "^1.2.0",
-		"module-alias": "^2.2.2",
-		"shoukaku": "^3.4.0",
-		"stone-deezer": "^1.2.3",
-		"tslib": "^2.4.1"
-	},
-	"devDependencies": {
-		"@types/node": "^16.10.2",
-		"rimraf": "^3.0.2",
-		"type-fest": "^2.3.2",
-		"typescript": "^4.4.3"
-	},
-	"engines": {
-		"node": ">=16.6.x"
-	}
+    "name": "mayo-v2",
+    "version": "0.0.1",
+    "description": "mayonez v2",
+    "main": "dist/index.js",
+    "private": true,
+    "_moduleAliases": {
+        "@lib": "dist/lib"
+    },
+    "scripts": {
+        "build": "yarn clean && tsc",
+        "clean": "rimraf dist",
+        "dev": "yarn build && node .",
+        "start": "yarn dev --force-sync"
+    },
+    "dependencies": {
+        "discord.js": "^14.11.0",
+        "dotenv": "^10.0.0",
+        "kazagumo": "^2.3.2",
+        "kazagumo-spotify": "^1.2.0",
+        "module-alias": "^2.2.2",
+        "shoukaku": "^3.4.0",
+        "stone-deezer": "latest",
+        "tslib": "^2.4.1"
+    },
+    "devDependencies": {
+        "@types/node": "^16.10.2",
+        "rimraf": "^3.0.2",
+        "type-fest": "^2.3.2",
+        "typescript": "^4.4.3"
+    },
+    "engines": {
+        "node": ">=16.6.x"
+    }
 }
