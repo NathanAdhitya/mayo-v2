@@ -8,10 +8,10 @@
         "@lib": "dist/lib"
     },
     "scripts": {
-        "build": "yarn clean && tsc",
+        "build": "npm run clean && tsc",
         "clean": "rimraf dist",
-        "dev": "yarn build && node .",
-        "start": "yarn dev --force-sync"
+        "dev": "npm run build && node .",
+        "start": "npm run dev"
     },
     "dependencies": {
         "discord.js": "^14.11.0",
