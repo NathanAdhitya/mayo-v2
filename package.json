@@ -14,12 +14,13 @@
         "start": "npm run dev"
     },
     "dependencies": {
-        "discord.js": "^14.11.0",
+        "discord.js": "^14.14.1",
         "dotenv": "^10.0.0",
-        "kazagumo": "^2.3.2",
-        "kazagumo-spotify": "^1.2.0",
+        "kazagumo": "^3.0.3",
+        "kazagumo-deezer": "^2.0.2",
+        "kazagumo-spotify": "^2.0.1",
         "module-alias": "^2.2.2",
-        "shoukaku": "^3.4.0",
+        "shoukaku": "^4.0.1",
         "stone-deezer": "latest",
         "tslib": "^2.4.1"
     },

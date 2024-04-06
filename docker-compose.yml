@@ -5,11 +5,11 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    depends_on: 
+    depends_on:
       - lavalink
 
   lavalink:
-    image: fredboat/lavalink:3
+    image: fredboat/lavalink:fe62703
     hostname: lavalink
     restart: unless-stopped
     volumes:
