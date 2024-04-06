@@ -5,9 +5,12 @@ import { escapeMarkdown } from "discord.js";
 
 export default {
   cmd: "skip",
-  description: "skip the current track",
+  description: "skip the current track, can specify how many to skip",
   exec: async (message) => {
     const gp = await GuildPlayer.create(message);
+
+    const query = message.content.substring(message.content.indexOf(" ") + 1);
+    const skipCount = Number.isNaN(parseInt(query)) ? 1 : parseInt(query);
 
     /* check if a player exists for this guild. */
     if (!gp.isPlayerConnected()) {
@@ -31,11 +34,20 @@ export default {
 
     const currentPlaying = gp.player.queue.current?.title;
 
+    // if skipping more than one
+    if (skipCount > 1) {
+      gp.player.queue.splice(0, skipCount - 1);
+    }
+
     /* skip and go to next. */
     await gp.player.skip();
 
-    await message.reply(
-      `skipping ${escapeMarkdown(currentPlaying ?? "current track")}`
-    );
+    if (skipCount > 1) {
+      return message.reply(`skipped ${skipCount} tracks`);
+    } else {
+      await message.reply(
+        `skipping ${escapeMarkdown(currentPlaying ?? "current track")}`
+      );
+    }
   },
 } satisfies CommandData;
