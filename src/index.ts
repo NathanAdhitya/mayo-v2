@@ -1,13 +1,14 @@
 import "dotenv/config";
-import "module-alias/register";
-import { Bot, CommandData, Utils } from "@lib";
+
+import { Bot, CommandData, Utils } from "./lib/index.js";
 import { join } from "path";
-import { ChannelType, Message } from "discord.js";
+import { ChannelType, Message, escapeMarkdown, hyperlink } from "discord.js";
 
 const client = new Bot();
 let commandMap: Map<string, CommandData["exec"]> = new Map();
 const guildPlayerTimeouts = new Map<string, NodeJS.Timeout>();
 const playerIdleTimeoutMs = 5 * 60 * 1000;
+const __dirname = import.meta.dirname;
 
 client.kazagumo.shoukaku.on("ready", (name) =>
   console.log(`[music] Lavalink ${name}: Ready!`)
@@ -39,10 +40,10 @@ client.kazagumo.on("playerEmpty", (player) => {
   // Set a timeout of 5 minutes before disconnecting
   guildPlayerTimeouts.set(
     player.guildId,
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         player.disconnect();
-        player.destroy();
+        await player.destroy();
       } catch (e) {}
     }, playerIdleTimeoutMs)
   );
@@ -63,9 +64,11 @@ client.kazagumo.on("playerStart", (player, track) => {
 
     if (originalChannel && originalChannel.type === ChannelType.GuildText)
       originalChannel.send({
-        content: `now playing [**${track.title}**](${track.uri}) ${
-          track.requester ? `requested by <@${track.requester}>` : ""
-        }`,
+        content: `now playing ${
+          track.uri
+            ? hyperlink(escapeMarkdown(track.title), track.uri)
+            : escapeMarkdown(track.title)
+        } ${track.requester ? `requested by ${track.requester}` : ""}`,
         allowedMentions: { parse: [] },
       });
   } catch (e) {
@@ -76,7 +79,12 @@ client.kazagumo.on("playerStart", (player, track) => {
 client.kazagumo.shoukaku.on("error", (_, error) => console.error(error));
 
 client.on("ready", async () => {
-  commandMap = await Utils.prepareCommands(join(__dirname, "commands"));
+  await Utils.prepareCommands(
+    join(__dirname, "commands"),
+    commandMap,
+    process.env.HMR == "true"
+  );
+
   client.user!.setActivity(`music. ${process.env.BOT_PREFIX}mayohelp`);
   console.log("[discord] ready!");
 });

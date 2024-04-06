@@ -1,9 +1,11 @@
-import { CommandData, MessageChannel, Utils } from "@lib";
+import { CommandData, Utils } from "../lib/index.js";
 import { PlayerState, SearchResultTypes } from "kazagumo";
-import { GuildPlayer } from "../lib/GuildPlayer";
+import { GuildPlayer } from "../lib/GuildPlayer.js";
+import { bold, escapeMarkdown } from "discord.js";
 
 export default {
   cmd: "play",
+  description: "play music",
   alias: ["p"],
   exec: async (message) => {
     const gp = await GuildPlayer.create(message);
@@ -37,14 +39,22 @@ export default {
     if (results) {
       if (results.type === "PLAYLIST") {
         player.queue.add(results.tracks);
-        msg = `queued playlist [**${results.playlistName}**](${query}), it has a total of **${results.tracks.length}** tracks.`;
+        const escapedPlaylistName = escapeMarkdown(
+          results.playlistName ?? "unnamed"
+        );
+        msg = `queued playlist [${bold(
+          escapedPlaylistName
+        )}](${query}), it has a total of **${results.tracks.length}** tracks.`;
       } else if (results.type === "SEARCH") {
         if (results.tracks.length > 1) {
           const maxSearchResults =
             results.tracks.length < 5 ? results.tracks.length : 5;
           const trackSelection = results.tracks
             .slice(0, maxSearchResults)
-            .map((track, index) => `${++index} - \`${track.title}\``)
+            .map(
+              (track, index) =>
+                `${++index} - \`${escapeMarkdown(track.title)}\``
+            )
             .join("\n");
 
           message.reply(
@@ -63,7 +73,9 @@ export default {
             collector.on("collect", async (m) => {
               const first = m.content;
               if (
-                first.toLowerCase().startsWith("!play") ||
+                first
+                  .toLowerCase()
+                  .startsWith(`${process.env.BOT_PREFIX!}play`) ||
                 first.toLowerCase().startsWith("cancel")
               ) {
                 message.reply("cancelled selection.");
@@ -89,7 +101,7 @@ export default {
               }
 
               player.queue.add(track);
-              msg = `enqueuing [${track.title}]`;
+              msg = `enqueuing [${escapeMarkdown(track.title)}]`;
               resolve(true);
             });
 
@@ -110,7 +122,7 @@ export default {
       } else if (results.type === "TRACK") {
         const [track] = results.tracks;
         player.queue.add(track);
-        msg = `enqueuing [${track.title}]`;
+        msg = `enqueuing [${escapeMarkdown(track.title)}]`;
       }
     } else {
       return message.reply("no matches found...?");

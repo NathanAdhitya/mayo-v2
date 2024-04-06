@@ -1,22 +1,21 @@
 import { CommandData, Utils } from "../lib/index.js";
 import { PlayerState } from "kazagumo";
 import { GuildPlayer } from "../lib/GuildPlayer.js";
-import { escapeMarkdown } from "discord.js";
 
 export default {
-  cmd: "skip",
-  description: "skip the current track",
+  cmd: "clear",
+  description: "clear the queue",
   exec: async (message) => {
     const gp = await GuildPlayer.create(message);
+
+    /* check if the user is in a voice channel. */
+    if (!gp.isInvokerInVoiceChannel()) {
+      return message.reply("you must be in a vc");
+    }
 
     /* check if a player exists for this guild. */
     if (!gp.isPlayerConnected()) {
       return message.reply("couldn't find a player for this guild.");
-    }
-
-    /* check if the invoker is in a voice channel. */
-    if (!gp.isInvokerInVoiceChannel()) {
-      return message.reply("you must be in a vc");
     }
 
     /* check if the invoker is in the player's voice channel. */
@@ -26,16 +25,11 @@ export default {
       );
     }
 
-    if (gp.player.queue.totalSize === 0)
-      return message.reply("queue is empty?");
+    const clearedCount = gp.player.queue.length;
+    gp.player.queue.clear();
 
-    const currentPlaying = gp.player.queue.current?.title;
-
-    /* skip and go to next. */
-    await gp.player.skip();
-
-    await message.reply(
-      `skipping ${escapeMarkdown(currentPlaying ?? "current track")}`
+    return message.reply(
+      `cleared ${clearedCount} track${clearedCount > 1 ? "s" : ""}.`
     );
   },
 } satisfies CommandData;

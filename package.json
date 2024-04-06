@@ -1,36 +1,38 @@
 {
-    "name": "mayo-v2",
-    "version": "0.0.1",
-    "description": "mayonez v2",
-    "main": "dist/index.js",
-    "private": true,
-    "_moduleAliases": {
-        "@lib": "dist/lib"
-    },
-    "scripts": {
-        "build": "npm run clean && tsc",
-        "clean": "rimraf dist",
-        "dev": "npm run build && node .",
-        "start": "npm run dev"
-    },
-    "dependencies": {
-        "discord.js": "^14.14.1",
-        "dotenv": "^10.0.0",
-        "kazagumo": "^3.0.3",
-        "kazagumo-deezer": "^2.0.2",
-        "kazagumo-spotify": "^2.0.1",
-        "module-alias": "^2.2.2",
-        "shoukaku": "^4.0.1",
-        "stone-deezer": "latest",
-        "tslib": "^2.4.1"
-    },
-    "devDependencies": {
-        "@types/node": "^16.10.2",
-        "rimraf": "^3.0.2",
-        "type-fest": "^2.3.2",
-        "typescript": "^5.1.6"
-    },
-    "engines": {
-        "node": ">=16.6.x"
-    }
+  "name": "mayo-v2",
+  "version": "0.0.1",
+  "description": "mayonez v2",
+  "main": "dist/index.js",
+  "private": true,
+  "type": "module",
+  "_moduleAliases": {
+    "@lib": "lib"
+  },
+  "scripts": {
+    "build": "npm run clean && tsc",
+    "clean": "rimraf dist",
+    "dev": "npm run build && node .",
+    "build:watch": "npm run build -- --watch",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^10.0.0",
+    "kazagumo": "^3.0.3",
+    "kazagumo-deezer": "^2.0.2",
+    "kazagumo-spotify": "^2.0.1",
+    "shoukaku": "^4.0.1",
+    "stone-deezer": "latest",
+    "tslib": "^2.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.5",
+    "chokidar": "^3.6.0",
+    "rimraf": "^3.0.2",
+    "type-fest": "^2.3.2",
+    "typescript": "^5.1.6"
+  },
+  "engines": {
+    "node": ">=20.11.x"
+  }
 }

@@ -1,4 +1,2 @@
-import type { MessageChannel } from "./Utils";
-
-export * from "./Bot";
-export * from "./Utils";
+export * from "./Bot.js";
+export * from "./Utils.js";
