@@ -9,7 +9,7 @@ services:
       - lavalink
 
   lavalink:
-    image: fredboat/lavalink:fe62703
+    image: fredboat/lavalink:4
     hostname: lavalink
     restart: unless-stopped
     volumes:
